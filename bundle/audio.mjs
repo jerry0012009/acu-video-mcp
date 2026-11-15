@@ -36,11 +36,13 @@ export function audioWorker(connection, upstream, { fetchImpl = fetch, signal = 
     else active++;
     try {
       signal.throwIfAborted();
-      if ((await stat(wavPath)).size > (12 << 20)) throw new Error('Audio chunk exceeds inline request budget');
+      const size = (await stat(wavPath)).size;
+      if (size > (12 << 20)) throw new Error('Audio chunk exceeds inline request budget');
+      const duration = Math.max(0, (size - 44) / 32000);
       const data = (await readFile(wavPath)).toString('base64');
       const body = JSON.stringify({ contents: [{ role: 'user', parts: [
         { inlineData: { mimeType: 'audio/wav', data } },
-        { text: 'Listen to this audio. Return verbatim speech in transcription and audible non-speech events (music, sound effects, engines, tires, ambient sounds) in audio_tags. Use HH:MM:SS timestamps relative to this audio chunk. Empty arrays mean no such events were heard. Do not invent sounds from expectations or video prompts. Labels are observations, not objective acoustic measurements.' }
+        { text: `Listen to this audio. Its duration is ${duration.toFixed(2)} seconds. First determine whether intelligible human speech is actually audible. This may be a non-speech-only recording. Never force speech recognition on noise, tones or music: transcription MUST be [] when no intelligible speech is audible. Return verbatim speech in transcription and audible non-speech events (music, sound effects, engines, tires, ambient sounds) in audio_tags. Use HH:MM:SS timestamps relative to this chunk, never MM:SS:milliseconds. Three seconds is 00:00:03, not 00:03:00. No timestamp may exceed ${Math.ceil(duration)} seconds. Empty arrays mean no such events were heard. Do not guess words or invent sounds from expectations or video prompts. Labels are observations, not objective acoustic measurements.` }
       ] }], generationConfig: { responseMimeType: 'application/json', responseSchema: schema, maxOutputTokens: 4096 } });
       const response = await fetchImpl(connection.url, {
         method: 'POST', headers: { Authorization: `Bearer ${connection.key}`, 'Content-Type': 'application/json' },
@@ -57,7 +59,6 @@ export function audioWorker(connection, upstream, { fetchImpl = fetch, signal = 
       try { decoded = JSON.parse(raw); } catch { throw new Error('Invalid audio observations'); }
       if (!Array.isArray(decoded?.transcription) || !Array.isArray(decoded?.audio_tags)) throw new Error('Missing audio observations');
       const parsed = upstream.parseGeminiAudioResponse(raw);
-      const duration = Math.max(0, ((await stat(wavPath)).size - 44) / 32000);
       const normalize = (items, field) => {
         if (!Array.isArray(items) || items.length > 500) throw new Error('Invalid audio observations');
         return items.map(item => {

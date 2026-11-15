@@ -32,7 +32,12 @@ try {
   const parts = result.result.content;
   const audio = parts.filter(p => p.type === 'text').map(p => { try { return JSON.parse(p.text).acu_audio; } catch { return null; } }).find(Boolean);
   assert.equal(audio?.status, 'complete', 'Audio did not complete');
-  assert(audio.transcription.some(s => /seven blue lanterns/i.test(s.text)), 'Spoken fixture was not recognized');
+  if (process.env.ACU_AUDIO_EXPECT === 'sound') {
+    assert(audio.audio_tags.some(s => /tone|beep|sine|electronic|hum|ring|whistl/i.test(s.tag)), 'Non-speech sound fixture was not recognized');
+    assert.equal(audio.transcription.length, 0, 'Invented speech in a tone-only fixture');
+  } else {
+    assert(audio.transcription.some(s => /seven blue lanterns/i.test(s.text)), 'Spoken fixture was not recognized');
+  }
   assert(parts.some(p => p.type === 'image'), 'Visual evidence was lost');
   console.log(JSON.stringify({ ok: true, model: audio.model, status: audio.status, frames: parts.filter(p => p.type === 'image').length,
     transcription: audio.transcription, audio_tags: audio.audio_tags, range: audio.range }));

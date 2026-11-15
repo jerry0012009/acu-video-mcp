@@ -31,6 +31,8 @@ test('thin transport preserves inline audio, sound tags, timestamp offsets and s
       assert.equal(options.headers.Authorization, 'Bearer fixture-secret');
       const body = JSON.parse(options.body);
       assert.equal(body.contents[0].parts[0].inlineData.mimeType, 'audio/wav');
+      assert.match(body.contents[0].parts[1].text, /transcription MUST be \[\]/);
+      assert.match(body.contents[0].parts[1].text, /Three seconds is 00:00:03/);
       assert(!('thinkingBudget' in body.generationConfig));
       return Response.json({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify({
         transcription: [{ start: '00:00:01', end: '00:00:02', text: 'hello' }],
