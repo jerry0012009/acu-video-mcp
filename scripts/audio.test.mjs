@@ -32,11 +32,11 @@ test('thin transport preserves inline audio, sound tags, timestamp offsets and s
       const body = JSON.parse(options.body);
       assert.equal(body.contents[0].parts[0].inlineData.mimeType, 'audio/wav');
       assert.match(body.contents[0].parts[1].text, /transcription MUST be \[\]/);
-      assert.match(body.contents[0].parts[1].text, /Three seconds is 00:00:03/);
+      assert.match(body.contents[0].parts[1].text, /NUMBERS in seconds/);
       assert(!('thinkingBudget' in body.generationConfig));
       return Response.json({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify({
-        transcription: [{ start: '00:00:01', end: '00:00:02', text: 'hello' }],
-        audio_tags: [{ start: '00:00:02', end: '00:00:04', tag: 'engine accelerating' }]
+        transcription: [{ start: 1, end: 2, text: 'hello' }],
+        audio_tags: [{ start: 2, end: 4, tag: 'engine accelerating' }]
       }) }] } }] });
     } });
     const result = await worker(file, 120);
@@ -77,7 +77,7 @@ test('real MOV conversion reuses upstream extraction, no-track handling, chunkin
       assert.equal(wav.toString('ascii', 0, 4), 'RIFF');
       assert(wav.length < (12 << 20));
       return Response.json({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify({
-        transcription: [], audio_tags: [{ start: '00:00:00', end: '00:00:01', tag: 'tone' }]
+        transcription: [], audio_tags: [{ start: 0, end: 1, tag: 'tone' }]
       }) }] } }] });
     } };
     assert.equal((await analyzeAudio(stage, { path: silent }, connection, options)).status, 'no_audio');

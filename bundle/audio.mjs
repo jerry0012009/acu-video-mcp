@@ -20,10 +20,10 @@ export function audioConnection(env = process.env) {
 const schema = {
   type: 'OBJECT', properties: {
     transcription: { type: 'ARRAY', items: { type: 'OBJECT', properties: {
-      start: { type: 'STRING' }, end: { type: 'STRING' }, text: { type: 'STRING' }
+      start: { type: 'NUMBER' }, end: { type: 'NUMBER' }, text: { type: 'STRING' }
     }, required: ['start', 'end', 'text'] } },
     audio_tags: { type: 'ARRAY', items: { type: 'OBJECT', properties: {
-      start: { type: 'STRING' }, end: { type: 'STRING' }, tag: { type: 'STRING' }
+      start: { type: 'NUMBER' }, end: { type: 'NUMBER' }, tag: { type: 'STRING' }
     }, required: ['start', 'end', 'tag'] } }
   }, required: ['transcription', 'audio_tags']
 };
@@ -42,7 +42,7 @@ export function audioWorker(connection, upstream, { fetchImpl = fetch, signal = 
       const data = (await readFile(wavPath)).toString('base64');
       const body = JSON.stringify({ contents: [{ role: 'user', parts: [
         { inlineData: { mimeType: 'audio/wav', data } },
-        { text: `Listen to this audio. Its duration is ${duration.toFixed(2)} seconds. First determine whether intelligible human speech is actually audible. This may be a non-speech-only recording. Never force speech recognition on noise, tones or music: transcription MUST be [] when no intelligible speech is audible. Return verbatim speech in transcription and audible non-speech events (music, sound effects, engines, tires, ambient sounds) in audio_tags. Use HH:MM:SS timestamps relative to this chunk, never MM:SS:milliseconds. Three seconds is 00:00:03, not 00:03:00. No timestamp may exceed ${Math.ceil(duration)} seconds. Empty arrays mean no such events were heard. Do not guess words or invent sounds from expectations or video prompts. Labels are observations, not objective acoustic measurements.` }
+        { text: `Listen to this audio. Its duration is ${duration.toFixed(2)} seconds. First determine whether intelligible human speech is actually audible. This may be a non-speech-only recording. Never force speech recognition on noise, tones or music: transcription MUST be [] when no intelligible speech is audible. Return verbatim speech in transcription and audible non-speech events (music, sound effects, engines, tires, ambient sounds) in audio_tags. start and end must be NUMBERS in seconds relative to this chunk, e.g. start: 0, end: 2.8. Do NOT return formatted timestamp strings. No value may exceed ${Math.ceil(duration)} seconds. Empty arrays mean no such events were heard. Do not guess words or invent sounds from expectations or video prompts. Labels are observations, not objective acoustic measurements.` }
       ] }], generationConfig: { responseMimeType: 'application/json', responseSchema: schema, maxOutputTokens: 4096 } });
       const response = await fetchImpl(connection.url, {
         method: 'POST', headers: { Authorization: `Bearer ${connection.key}`, 'Content-Type': 'application/json' },
@@ -62,11 +62,11 @@ export function audioWorker(connection, upstream, { fetchImpl = fetch, signal = 
       const normalize = (items, field) => {
         if (!Array.isArray(items) || items.length > 500) throw new Error('Invalid audio observations');
         return items.map(item => {
-          if (!item || !/^\d{2}:\d{2}:\d{2}$/.test(item.start) || !/^\d{2}:\d{2}:\d{2}$/.test(item.end) ||
+          if (!item || typeof item.start !== 'number' || !Number.isFinite(item.start) || typeof item.end !== 'number' || !Number.isFinite(item.end) ||
               typeof item[field] !== 'string' || item[field].length > 4000) throw new Error('Invalid audio observation');
-          const start = upstream.parseHMS(item.start), end = upstream.parseHMS(item.end);
-          if (start > end || end > duration + 1) throw new Error('Audio timestamp outside analyzed chunk');
-          return { start: upstream.formatHMS(start + offsetSec), end: upstream.formatHMS(end + offsetSec), [field]: item[field] };
+          const start = item.start, end = item.end;
+          if (start < 0 || start > end || end > duration + 1) throw new Error('Audio timestamp outside analyzed chunk');
+          return { start: upstream.formatHMS(Math.min(start, duration) + offsetSec), end: upstream.formatHMS(Math.min(end, duration) + offsetSec), [field]: item[field] };
         });
       };
       return { segments: normalize(parsed.transcription, 'text'), tags: normalize(parsed.audio_tags, 'tag') };
