@@ -18,7 +18,20 @@ type videoMCPContent struct {
 }
 
 func readFrames(ctx context.Context, root, file string) ([]videoMCPContent, error) {
+	return readMedia(ctx, root, file, nil)
+}
+
+type audioConfig struct {
+	BaseURL string `json:"baseUrl"`
+	APIKey  string `json:"apiKey"`
+	Model   string `json:"model"`
+}
+
+func readMedia(ctx context.Context, root, file string, audio *audioConfig) ([]videoMCPContent, error) {
 	c := command(ctx, filepath.Join(root, program("node")), filepath.Join(root, "launch.cjs"))
+	if audio != nil {
+		c.Env = append(os.Environ(), "ACU_AUDIO_BASE_URL="+audio.BaseURL, "ACU_AUDIO_API_KEY="+audio.APIKey, "ACU_AUDIO_MODEL="+audio.Model)
+	}
 	in, err := c.StdinPipe()
 	if err != nil {
 		return nil, err
@@ -31,7 +44,15 @@ func readFrames(ctx context.Context, root, file string) ([]videoMCPContent, erro
 	if err := c.Start(); err != nil {
 		return nil, err
 	}
-	defer func() { in.Close(); c.Process.Kill(); c.Wait() }()
+	defer func() {
+		in.Close()
+		if c.Cancel != nil {
+			_ = c.Cancel()
+		} else {
+			_ = c.Process.Kill()
+		}
+		_ = c.Wait()
+	}()
 	enc := json.NewEncoder(in)
 	send := func(id int, method string, p any) error {
 		return enc.Encode(map[string]any{"jsonrpc": "2.0", "id": id, "method": method, "params": p})
@@ -74,7 +95,7 @@ func readFrames(ctx context.Context, root, file string) ([]videoMCPContent, erro
 			if fps > 2 {
 				fps = 2
 			}
-			if err := send(3, "tools/call", map[string]any{"name": "video_watch", "arguments": map[string]any{"path": file, "fps": fps, "view_sample": 12, "resolution": 640, "skip_audio": true}}); err != nil {
+			if err := send(3, "tools/call", map[string]any{"name": "video_watch", "arguments": map[string]any{"path": file, "fps": fps, "view_sample": 12, "resolution": 640, "skip_audio": audio == nil}}); err != nil {
 				return nil, err
 			}
 		}

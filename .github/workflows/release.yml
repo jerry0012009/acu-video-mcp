@@ -25,6 +25,9 @@ jobs:
       - run: go test -race ./...
       - run: go vet ./...
       - run: node scripts/package.cjs
+      - name: Verify upstream audio reuse without cloud inference
+        shell: bash
+        run: ACU_VIDEO_STAGE="$PWD/dist/stage" node --test scripts/audio.test.mjs
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform }}
@@ -42,4 +45,4 @@ jobs:
         run: |
           cd release
           sha256sum acu-video-mcp-* > SHA256SUMS.txt
-          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "ACU Video MCP $GITHUB_REF_NAME" --notes 'Independent self-contained upstream video MCP adapter. Standard MCP; no Magpie patches. Visual samples only, no audio inference.' ./*
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --title "ACU Video MCP $GITHUB_REF_NAME" --notes 'Self-contained upstream video MCP with optional ACU Gemini audio understanding. Reuses upstream WAV extraction and silence-aware chunking. Standard MCP; no Magpie patches. Requires ACU audio connection for cloud audio inference; visual-only fallback remains available.' ./*

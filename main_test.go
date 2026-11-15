@@ -74,3 +74,16 @@ func TestPayloadReadyUsesPrivateVersionedCache(t *testing.T) {
 		t.Fatal(p)
 	}
 }
+
+func TestNativeRejectsAudioSecretsOutsideTrustedExtension(t *testing.T) {
+	data := []byte(`{"action":"video-frames","url":"https://files.tapnow.media/a.mov","audio":{"apiKey":"fixture-private-key","baseUrl":"https://console.acucompute.com/v1","model":"gemini-3.8-flash"}}`)
+	var in, out bytes.Buffer
+	binary.Write(&in, binary.LittleEndian, uint32(len(data)))
+	in.Write(data)
+	if err := native(context.Background(), "chrome-extension://lohhkeighnafehcjelhlimegfgpelghg/", &in, &out); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(out.String(), "fixture-private-key") || !strings.Contains(out.String(), "untrusted") {
+		t.Fatal("unsafe native response")
+	}
+}

@@ -56,6 +56,7 @@ type tapnowVideoReply struct {
 	Content       []videoMCPContent `json:"content,omitempty"`
 	Omitted       int               `json:"omitted"`
 	AudioAnalyzed bool              `json:"audioAnalyzed"`
+	Audio         json.RawMessage   `json:"audio,omitempty"`
 }
 
 var fetchTapnowVideo = func(req *http.Request) (*http.Response, error) { return tapnowVideoClient().Do(req) }
@@ -64,6 +65,10 @@ var sampleVideo = readFrames
 // TapnowFrames is the kernel's bounded media ingress. The native adapter checks
 // extension identity; this layer owns URL safety, downloads and upstream MCP calls.
 func tapnowFrames(ctx context.Context, root, raw string) tapnowVideoReply {
+	return tapnowMedia(ctx, root, raw, nil)
+}
+
+func tapnowMedia(ctx context.Context, root, raw string, audio *audioConfig) tapnowVideoReply {
 	fail := func(message string) tapnowVideoReply { return tapnowVideoReply{Error: message} }
 	u, err := tapnowVideoURL(raw)
 	if err != nil {
@@ -101,13 +106,32 @@ func tapnowFrames(ctx context.Context, root, raw string) tapnowVideoReply {
 	if copyErr != nil || closeErr != nil || n == 0 || n > maxVideo {
 		return fail("视频下载不完整或超过 100 MiB")
 	}
-	content, err := sampleVideo(ctx, root, file)
+	var content []videoMCPContent
+	if audio == nil {
+		content, err = sampleVideo(ctx, root, file)
+	} else {
+		content, err = readMedia(ctx, root, file, audio)
+	}
 	if err != nil {
 		return fail(err.Error())
 	}
 	reply := tapnowVideoReply{OK: true, Content: []videoMCPContent{}}
 	bytes := 0
 	for _, part := range content {
+		if part.Type == "text" {
+			var evidence struct {
+				Audio json.RawMessage `json:"acu_audio"`
+			}
+			if json.Unmarshal([]byte(part.Text), &evidence) == nil && len(evidence.Audio) > 0 && len(evidence.Audio) < 64<<10 {
+				reply.Audio = evidence.Audio
+				var state struct {
+					Analyzed bool `json:"analyzed"`
+				}
+				json.Unmarshal(evidence.Audio, &state)
+				reply.AudioAnalyzed = state.Analyzed
+				continue
+			}
+		}
 		encoded, _ := json.Marshal(part)
 		if bytes+len(encoded) > 750<<10 {
 			if part.Type == "image" {

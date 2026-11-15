@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-const version = "0.1.0"
+const version = "0.2.0"
 const nativeName = "com.acucompute.video"
 const companionOrigin = "chrome-extension://illffggofpdcjmdcenajnbmnokoclabh/"
 
@@ -172,9 +172,10 @@ func native(ctx context.Context, origin string, in io.Reader, out io.Writer) err
 		return fail("invalid native request")
 	}
 	var req struct {
-		Action  string `json:"action"`
-		Version string `json:"version"`
-		URL     string `json:"url"`
+		Action  string       `json:"action"`
+		Version string       `json:"version"`
+		URL     string       `json:"url"`
+		Audio   *audioConfig `json:"audio,omitempty"`
 	}
 	d := json.NewDecoder(bytes.NewReader(b))
 	d.DisallowUnknownFields()
@@ -188,7 +189,7 @@ func native(ctx context.Context, origin string, in io.Reader, out io.Writer) err
 	if err != nil {
 		return fail("video dependencies unavailable")
 	}
-	ctx, cancel := context.WithTimeout(ctx, 85*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 160*time.Second)
 	defer cancel()
-	return reply(tapnowFrames(ctx, root, req.URL))
+	return reply(tapnowMedia(ctx, root, req.URL, req.Audio))
 }

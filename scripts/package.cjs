@@ -1,6 +1,6 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),https=require('node:https');
 const {execFileSync}=require('node:child_process');
-const platform=process.platform,arch=process.arch,version='0.1.0',nodeVersion='24.22.3';
+const platform=process.platform,arch=process.arch,version='0.2.0',nodeVersion='24.22.3';
 const pins={
  'linux-x64':'061ec3e3062115705b56b51fa9cc330ab50d34b6969387d4e4b1a50c6809acc2',
  'darwin-x64':'977614af0504c81045e7fd85596dbca0e5f951b96681516dadafedcca8c447f7',
@@ -17,7 +17,7 @@ async function main(){
  else execFileSync('tar',['-xzf',archive,'-C',stage]);
  const nodeDir=platform==='win32'?path.join(stage,'node-dist',`node-v${nodeVersion}-win-${arch}`):path.join(stage,`node-v${nodeVersion}-${platform}-${arch}`);
  const node=path.join(nodeDir,platform==='win32'?'node.exe':'bin/node'),npm=path.join(nodeDir,platform==='win32'?'node_modules/npm/bin/npm-cli.js':'lib/node_modules/npm/bin/npm-cli.js');
- for(const name of ['package.json','package-lock.json','launch.cjs'])fs.copyFileSync(path.join('bundle',name),path.join(stage,name));
+ for(const name of ['package.json','package-lock.json','launch.cjs','audio.mjs'])fs.copyFileSync(path.join('bundle',name),path.join(stage,name));
  const pkg=JSON.parse(fs.readFileSync(path.join(stage,'package.json'))),lock=JSON.parse(fs.readFileSync(path.join(stage,'package-lock.json')));
  for(const p of ['ffmpeg','ffprobe']){const name=`@${p}-installer/${platform}-${arch}`,entry=lock.packages['node_modules/'+name];if(!entry)throw Error('binary not locked');pkg.dependencies[name]=entry.version;delete entry.optional;}
  lock.packages[''].dependencies=pkg.dependencies;
