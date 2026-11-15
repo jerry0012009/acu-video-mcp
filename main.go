@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-const version = "0.2.1"
+const version = "0.2.2"
 const nativeName = "com.acucompute.video"
 const companionOrigin = "chrome-extension://illffggofpdcjmdcenajnbmnokoclabh/"
 

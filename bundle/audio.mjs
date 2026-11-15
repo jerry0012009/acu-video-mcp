@@ -11,7 +11,7 @@ export function audioConnection(env = process.env) {
       !(host === 'acu.best' || host.endsWith('.acu.best') || host === 'acucompute.com' || host.endsWith('.acucompute.com'))) {
     throw new Error('Invalid ACU audio endpoint');
   }
-  const model = env.ACU_AUDIO_MODEL || 'gemini-3.8-flash';
+  const model = env.ACU_AUDIO_MODEL || 'gemini-3.5-flash-lite';
   if (!/^gemini-[a-zA-Z0-9._-]{1,100}$/.test(model) || !/^\S{8,4096}$/.test(env.ACU_AUDIO_API_KEY)) throw new Error('Invalid ACU audio configuration');
   base.pathname = base.pathname.replace(/\/$/, '').replace(/\/v1$/, '') + `/v1beta/models/${model}:generateContent`;
   return { url: base.toString(), key: env.ACU_AUDIO_API_KEY, model };

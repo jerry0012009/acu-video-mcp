@@ -1,6 +1,6 @@
 const fs=require('node:fs'),path=require('node:path'),crypto=require('node:crypto'),https=require('node:https');
 const {execFileSync}=require('node:child_process');
-const platform=process.platform,arch=process.arch,version='0.2.1',nodeVersion='24.22.3';
+const platform=process.platform,arch=process.arch,version='0.2.2',nodeVersion='24.22.3';
 const pins={
  'linux-x64':'061ec3e3062115705b56b51fa9cc330ab50d34b6969387d4e4b1a50c6809acc2',
  'darwin-x64':'977614af0504c81045e7fd85596dbca0e5f951b96681516dadafedcca8c447f7',

@@ -6,7 +6,7 @@ import { createInterface } from 'node:readline';
 const [executable, file] = process.argv.slice(2);
 const child = spawn(executable, [], { env: { ...process.env,
   ACU_AUDIO_BASE_URL: 'https://console.acucompute.com/v1',
-  ACU_AUDIO_MODEL: 'gemini-3.8-flash',
+  ACU_AUDIO_MODEL: 'gemini-3.5-flash-lite',
   ACU_AUDIO_API_KEY: readFileSync('/root/.local/share/codex-acu/credentials', 'utf8').trim()
 }, stdio: ['pipe', 'pipe', 'inherit'] });
 const pending = new Map();

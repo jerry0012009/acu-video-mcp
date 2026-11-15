@@ -16,7 +16,7 @@ test('ACU audio credentials never target Google, redirects or arbitrary hosts', 
     assert.throws(() => audioConnection({ ACU_AUDIO_API_KEY: 'fixture-key', ACU_AUDIO_BASE_URL: url }));
   }
   assert.equal(audioConnection({ ACU_AUDIO_API_KEY: 'fixture-key', ACU_AUDIO_BASE_URL: 'https://console.acucompute.com/v1' }).url,
-    'https://console.acucompute.com/v1beta/models/gemini-3.8-flash:generateContent');
+    'https://console.acucompute.com/v1beta/models/gemini-3.5-flash-lite:generateContent');
 });
 
 test('thin transport preserves inline audio, sound tags, timestamp offsets and safe errors', { skip: !stage }, async () => {

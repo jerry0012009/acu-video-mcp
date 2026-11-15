@@ -13,7 +13,7 @@ Tools: video_info, video_watch, video_analyze, video_detail. Optional audio
 understanding uses the existing ACU Key, not a Google Key or a local Whisper download.
 Set `ACU_AUDIO_API_KEY`, `ACU_AUDIO_BASE_URL` (default
 `https://console.acucompute.com/v1`), and optionally `ACU_AUDIO_MODEL` (default
-`gemini-3.8-flash`) in the standard MCP environment. Runtime supplies these from
+`gemini-3.5-flash-lite`) in the standard MCP environment. Runtime supplies these from
 the selected ACU connection. `video_watch` returns `acu_audio` with status,
 timestamped speech and non-speech sound events; `skip_audio: true` stays local.
 Without configuration or on audio failure, visual frames remain available.
